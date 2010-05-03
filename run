@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+
+// this starts the node server and the sinatra app
+// worker output (stdout/stderr) is displayed
+
+var sys     = require('sys')
+  , spawn   = require('child_process').spawn
+  , workers = new Array(
+      {'name' : 'Node', 'process' : spawn('node',   ['server.js'])},
+      {'name' : 'Thin', 'process' : spawn('bundle', ['exec', 'thin start'])}
+    );
+
+// capture stderr/stdout for each worker,
+// exit main process if a worker dies
+workers.forEach(function(worker, index) {
+
+  worker.process.addListener('exit', function(code) {
+    sys.puts(worker.name + ' exited');
+    workers[index].process = null;
+    process.exit();
+  });
+
+  worker.process.stderr.addListener('data', function(data) {
+    if( /^execvp\(\)/.test(data.asciiSlice(0, data.length)) ) { // node docs :-)
+      sys.puts(worker.name + ' did not start');
+    }
+  });
+
+  worker.process.stderr.addListener('data', function(data) {
+    sys.puts(data);
+  });
+
+  worker.process.stdout.addListener('data', function(data) {
+    sys.puts(data);
+  });
+});
+
+// when the main process exits, make sure no workers are left behind
+process.addListener('exit', function() {
+
+  workers.forEach(function(worker, index) {
+    if( worker.process !== null ) {
+      worker.process.kill();
+    }
+  });
+});
+
+// vim: ft=javascript

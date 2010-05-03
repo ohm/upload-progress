@@ -1,0 +1,123 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>Uploads</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript">
+
+  var Upload = {
+
+    // Appends an upload form to the #uploads div
+    addForm : function() {
+      var id = new Date().getTime(); // current timestamp will be upload id
+
+      $('#uploads')
+        .append(
+          $('<div>')
+            .attr({ 'id'    : id
+                  , 'class' : 'upload'
+                  , 'style' : 'margin-top: 1em;'
+                  })
+            .append(
+              $('<iframe>') // this is the target of the form submit
+                .attr({ 'id'    : 'iframe_' + id
+                      , 'style' : 'display: none;'
+                      , 'name'  : 'iframe_' + id
+                      })
+            )
+            .append(
+              $('<div>')
+                .attr({ 'id' : 'progress_' + id })
+                .html('Waiting for your upload...')
+            )
+            .append(
+              $('<form>')
+                .attr({ 'id'       : 'form_' + id
+                      , 'action'   : id
+                      , 'enctype'  : 'multipart/form-data'
+                      , 'encoding' : 'multipart/form-data'
+                      , 'method'   : 'post'
+                      , 'target'   : 'iframe_' + id
+                      })
+                .append(
+                  $('<input>')
+                    .attr({ 'id'    : 'title_' + id
+                          , 'name'  : 'title'
+                          , 'value' : 'Name your upload'
+                          })
+                )
+                .append(
+                  $('<input>')
+                    .attr({ 'type' : 'file'
+                          , 'name' : 'upload'
+                          })
+                )
+                .append(
+                  $('<input>')
+                    .attr({ 'type'  : 'submit'
+                          , 'name'  : 'submit'
+                          , 'value' : 'Upload' })
+                    .click(
+                      function() { // start polling for upload status on submit
+                        $('#form_' + id).submit();
+                        Upload.pollProgress(id);
+                      }
+                    )
+                )
+            )
+        )
+    },
+
+    // Performs a HTTP request to poll for the upload's progress
+    pollProgress : function(id) {
+      $.ajax({ 'url'      : '/' + id + '.json'
+             , 'dataType' : 'json'
+             , 'cache'    : false
+             , 'success'  : function(data, textStatus) {
+
+                  // update progress indicator
+                  $('#progress_' + id)
+                    .html(data.progress + '% finished...');
+
+                  // display link to download if 100% have been reached...
+                  if( data.progress >= 100 ) {
+                    $('#' + id).html(
+                      $('<a>')
+                        .attr({ 'href' : '/uploads/' + id })
+                        .html(
+                          $('#title_' + id).val()
+                        )
+                    );
+                  }
+                  else {
+                    // ...otherwise poll for status again after 250ms
+                    setTimeout(function() { Upload.pollProgress(id); }, 250);
+                  }
+               }
+             });
+    }
+  }
+
+  // apply behaviours once the DOM is ready
+  $('document').ready(function() {
+
+    $('#more').click(function() { // display upload forms as requested
+      Upload.addForm();
+      return false;
+    });
+
+    Upload.addForm(); // display an initial form
+  });
+</script>
+</head>
+
+<body>
+<h1>Uploads</h1>
+<a id="more" href="#">Upload additional files</a>
+<div id="uploads"></div>
+</body>
+
+</html>

@@ -1,0 +1,11 @@
+Proof of concept:
+
+File upload progress with node.js and a ruby backend
+
+Running it:
+
+1. Clone the git repository
+2. Install node.js (0.1.93) and have the node executable in PATH
+3. Install ruby (1.8.7) and bundler (>=0.9.x)
+4. bundle install the ruby gem dependencies
+5. ./run the server and open http://localhost:8080/
